@@ -1,0 +1,29 @@
+# Port Configuration:
+server:
+  port: 8080
+
+spring:
+  application:
+    name: user-management-system
+
+  # DB Configs:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/user_management_db
+    username: postgres
+    password: postgres
+
+  # JPA Configs:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# JWT Configs:
+app:
+  jwt:
+    secret: "qR7L2MZ3UuHhKxk6eZ4Lq9pE1D5c0S7p3WlQ8hYjR5tT2aXyZsWmErBvCqDpGfJx"
+    expiration: 3600000  # 1 hour in milliseconds
+    refresh-expiration: 86400000  # 24 hours in milliseconds
