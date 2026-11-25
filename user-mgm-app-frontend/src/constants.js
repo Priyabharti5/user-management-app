@@ -35,6 +35,7 @@ export const ENDPOINTS = {
   USERS: {
     ADD: "/users/add",        // POST - Register/Add new user
     SEARCH: "/users/search",  // POST - Search users (protected)
+    DELETE: "/users/delete"
   },
   AUTH: {
     LOGIN: "/auth/login",     // POST - Login and get JWT token

@@ -17,17 +17,12 @@ import { handleApiError } from '../utils/errorHandler';
 import Loader from '../components/Loader';
 import { MESSAGES, ROUTES, STORAGE_KEYS } from '../constants';
 
-/**
- * Renders a searchable and protected user list page.
- * - Allows filtering users by ID, username, first name, last name, or email.
- * - Displays total users count and search result count dynamically.
- */
 export default function UserListPage() {
   const { requireAuth, isAuthenticated } = useAuth();
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, getValues } = useForm({
     defaultValues: {
       userId: '',
-      userName: '',
+      username: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -39,65 +34,64 @@ export default function UserListPage() {
   const [loading, setLoading] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  /**
-   * Ref flag to ensure the initial data fetch fires only once,
-   * even if the component re-mounts or isAuthenticated changes.
-   */
-  const hasFetchedRef = useRef(false);
+  // 2.
+  const [sortByField, setSortByField] = useState(null);
+  const [sortAscending, setSortAscending] = useState(true);
 
+  const hasFetchedRef = useRef(false);
   const navigate = useNavigate();
 
-  /**
-   * On mount: protect the route.
-   * Redirects unauthenticated users to /login.
-   */
   useEffect(() => {
     requireAuth();
     // eslint-disable-next-line
   }, []);
 
-  /**
-   * Load all users once after confirmed authenticated.
-   * useRef guard prevents duplicate calls on re-renders or re-mounts.
-   */
   useEffect(() => {
     if (isAuthenticated && !hasFetchedRef.current) {
       hasFetchedRef.current = true;
-      handleSearch({}, false);
+      handleSearch({}, false, null, true);
     }
     // eslint-disable-next-line
   }, [isAuthenticated]);
 
-  /**
-   * Builds payload with only non-empty search fields.
-   */
   const buildPayload = (formData) => {
     const payload = {};
     if (formData.userId && String(formData.userId).trim() !== '')
       payload.userId = parseInt(formData.userId, 10);
-    ['userName', 'firstName', 'lastName', 'email'].forEach((key) => {
+    ['username', 'firstName', 'lastName', 'email'].forEach((key) => {
       if (formData[key]?.trim()) payload[key] = formData[key].trim();
     });
     return payload;
   };
 
-  /**
-   * Fetches users based on search criteria.
-   * Handles both initial load and filtered search.
-   */
-  const handleSearch = async (data, showToast = true) => {
+  // 4. 
+  const handleSearch = async (
+    data,
+    showToast = true,
+    currentSortField = sortByField,
+    currentSortAscending = sortAscending,
+  ) => {
     if (loading) return;
     setLoading(true);
-
     try {
       const payload = buildPayload(data);
+
+      if (currentSortField != null) {
+        payload.sortByField = currentSortField;
+        payload.sortAscending = currentSortAscending;
+      }
+
       const res = await searchUsers(payload);
       const fetchedUsers = res.data || [];
+
       setUsers(fetchedUsers);
 
       if (showToast) toast.dismiss();
 
-      if (Object.keys(payload).length === 0) {
+      if (
+        Object.keys(payload).length === 0 ||
+        (currentSortField && Object.keys(buildPayload(data)).length === 0)
+      ) {
         setTotalUsers(fetchedUsers.length);
         if (!hasLoadedOnce && showToast) {
           toast.success(`Loaded ${fetchedUsers.length} total users`);
@@ -128,23 +122,31 @@ export default function UserListPage() {
     }
   };
 
-  /**
-   * Handles form submission to search users.
-   */
-  const onSubmit = (data) => handleSearch(data, true);
+  // 3.
+  const handleSort = (field, ascending) => {
+    setSortByField(field);
+    setSortAscending(ascending);
 
-  /**
-   * Resets all filters and reloads all users.
-   */
+    const currentFormData = getValues();
+    handleSearch(currentFormData, false, field, ascending);
+  };
+
+  // 5.
+  const onSubmit = (data) =>
+    handleSearch(data, true, sortByField, sortAscending);
+
   const handleReset = () => {
     reset({
       userId: '',
-      userName: '',
+      username: '',
       firstName: '',
       lastName: '',
       email: '',
     });
-    handleSearch({}, true);
+    // 6.
+    setSortByField(null);
+    setSortAscending(true);
+    handleSearch({}, true, null, true);
   };
 
   return (
@@ -164,7 +166,7 @@ export default function UserListPage() {
         />
         <input
           type="text"
-          {...register('userName')}
+          {...register('username')}
           placeholder="User Name"
           className="border rounded w-full p-2 focus:ring-2 focus:ring-blue-500 outline-none"
         />
@@ -232,10 +234,39 @@ export default function UserListPage() {
           <table className="min-w-full">
             <thead>
               <tr className="bg-gray-200 text-left">
-                <th className="p-2">First Name</th>
-                <th className="p-2">Last Name</th>
-                <th className="p-2">Email</th>
-                <th className="p-2">User Name</th>
+                <th className="p-2">
+                    First Name
+                    {/** 1. */}
+                  <button onClick={() => handleSort('firstName', true)}>
+                    ▲
+                  </button>
+                  <button onClick={() => handleSort('firstName', false)}>
+                    ▼
+                  </button>
+                </th>
+                <th className="p-2">
+                  Last Name
+                  <button onClick={() => handleSort('lastName', true)}>
+                    ▲
+                  </button>
+                  <button onClick={() => handleSort('lastName', false)}>
+                    ▼
+                  </button>
+                </th>
+                <th className="p-2">
+                  Email
+                  <button onClick={() => handleSort('email', true)}>▲</button>
+                  <button onClick={() => handleSort('email', false)}>▼</button>
+                </th>
+                <th className="p-2">
+                  User Name
+                  <button onClick={() => handleSort('username', true)}>
+                    ▲
+                  </button>
+                  <button onClick={() => handleSort('username', false)}>
+                    ▼
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -248,7 +279,7 @@ export default function UserListPage() {
                     <td className="p-2">{u.firstName}</td>
                     <td className="p-2">{u.lastName}</td>
                     <td className="p-2">{u.email}</td>
-                    <td className="p-2">{u.userName}</td>
+                    <td className="p-2">{u.username}</td>
                   </tr>
                 ))
               ) : (

@@ -29,7 +29,8 @@ api.interceptors.request.use((config) => {
   // Both add-user and search-user are now protected endpoints
   const protectedEndpoints = [
     ENDPOINTS.USERS.SEARCH,
-    ENDPOINTS.USERS.ADD,     // <-- now protected: requires login
+    ENDPOINTS.USERS.ADD,
+    ENDPOINTS.USERS.DELETE// <-- now protected: requires login
   ];
 
   const isProtected = protectedEndpoints.some((endpoint) =>
@@ -61,5 +62,8 @@ export const loginUser = (credentials) =>
  */
 export const searchUsers = (filters) =>
   api.post(ENDPOINTS.USERS.SEARCH, filters);
+
+export const deleteUsers = (username) =>
+  api.delete(ENDPOINTS.USERS.DELETE, username);
 
 export default api;
