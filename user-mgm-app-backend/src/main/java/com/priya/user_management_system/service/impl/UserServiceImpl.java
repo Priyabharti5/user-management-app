@@ -3,17 +3,21 @@ package com.priya.user_management_system.service.impl;
 import com.priya.user_management_system.dto.add_user.AddUserRequestDTO;
 import com.priya.user_management_system.dto.add_user.AddUserResponseDTO;
 import com.priya.user_management_system.dto.UserResponseDTO;
+import com.priya.user_management_system.dto.general_response.ResponseDTO;
 import com.priya.user_management_system.dto.search.UserSearchRequestDTO;
 import com.priya.user_management_system.entity.User;
 import com.priya.user_management_system.exception.ResourceAlreadyExistsException;
+import com.priya.user_management_system.exception.ResourceNotFoundException;
 import com.priya.user_management_system.mapper.UserMapper;
 import com.priya.user_management_system.repository.UserRepository;
 import com.priya.user_management_system.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,13 +38,13 @@ public class UserServiceImpl implements UserService {
         // when request comes for adding a user, first we should check for username and email, as they must be unique
         // Check for username
         Optional<User> existingUserWithUsername = userRepository.findByUsername(requestDTO.getUsername());
-        if(existingUserWithUsername.isPresent()){
+        if (existingUserWithUsername.isPresent()) {
             throw new ResourceAlreadyExistsException("Username Already Exists!");
         }
 
         // Check for email
         Optional<User> existingUserWithEmail = userRepository.findByEmail(requestDTO.getEmail());
-        if(existingUserWithEmail.isPresent()){
+        if (existingUserWithEmail.isPresent()) {
             throw new ResourceAlreadyExistsException("User with this email already exists!");
         }
 
@@ -66,8 +70,52 @@ public class UserServiceImpl implements UserService {
     public List<UserResponseDTO> searchUsers(UserSearchRequestDTO requestDTO) {
         List<User> users = userRepository.searchUsers(requestDTO.getUsername(), requestDTO.getFirstName(), requestDTO.getLastName(), requestDTO.getEmail());
 
+        if (requestDTO.getSortByField() != null) {
+            Comparator<User> comparator = null;
+
+            switch (requestDTO.getSortByField()) {
+                case "firstName":
+                    comparator = Comparator.comparing(user -> user.getFirstName(), String.CASE_INSENSITIVE_ORDER);
+                    break;
+
+                case "lastName":
+                    comparator = Comparator.comparing(user -> user.getLastName(), String.CASE_INSENSITIVE_ORDER);
+                    break;
+
+                case "username":
+                    comparator = Comparator.comparing(user -> user.getUsername(), String.CASE_INSENSITIVE_ORDER);
+                    break;
+
+                case "email":
+                    comparator = Comparator.comparing(user -> user.getEmail(), String.CASE_INSENSITIVE_ORDER);
+                    break;
+            }
+            if(requestDTO.getSortAscending() != null && ! requestDTO.getSortAscending()){
+                comparator = comparator.reversed();
+            }
+
+            users.sort(comparator);
+        }
         return users.stream()
                 .map(UserMapper::toDTO)
                 .toList();
     }
+
+    @Override
+    public ResponseDTO deleteUser(String username) {
+        if(username == null || username.isEmpty()){
+            throw new ResourceNotFoundException("No user is selected to delete!!");
+        }
+        // find user by username before deleting
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found with given username: " + username));
+        userRepository.deleteById(user.getUserId());
+
+        return ResponseDTO.builder()
+                .status(HttpStatus.OK)
+                .message("User deleted successfully")
+                .build();
+    }
+
 }
+
+

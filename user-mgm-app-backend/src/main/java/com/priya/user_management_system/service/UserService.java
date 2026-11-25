@@ -3,6 +3,7 @@ package com.priya.user_management_system.service;
 import com.priya.user_management_system.dto.add_user.AddUserRequestDTO;
 import com.priya.user_management_system.dto.add_user.AddUserResponseDTO;
 import com.priya.user_management_system.dto.UserResponseDTO;
+import com.priya.user_management_system.dto.general_response.ResponseDTO;
 import com.priya.user_management_system.dto.search.UserSearchRequestDTO;
 
 import java.util.List;
@@ -20,4 +21,8 @@ public interface UserService {
 
     // 2. Search user / users
     List<UserResponseDTO> searchUsers(UserSearchRequestDTO requestDTO);
+
+    // 3. Delete User
+    ResponseDTO deleteUser(String username);
+
 }

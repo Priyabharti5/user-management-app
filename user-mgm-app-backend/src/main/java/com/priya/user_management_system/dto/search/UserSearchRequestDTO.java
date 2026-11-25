@@ -23,4 +23,8 @@ public class UserSearchRequestDTO {
 
     private String email;
 
+    public String sortByField;
+
+    public Boolean sortAscending;
+
 }

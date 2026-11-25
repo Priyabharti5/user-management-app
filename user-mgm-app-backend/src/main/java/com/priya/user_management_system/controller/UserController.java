@@ -3,7 +3,9 @@ package com.priya.user_management_system.controller;
 import com.priya.user_management_system.dto.add_user.AddUserResponseDTO;
 import com.priya.user_management_system.dto.add_user.AddUserRequestDTO;
 import com.priya.user_management_system.dto.UserResponseDTO;
+import com.priya.user_management_system.dto.general_response.ResponseDTO;
 import com.priya.user_management_system.dto.search.UserSearchRequestDTO;
+import com.priya.user_management_system.entity.User;
 import com.priya.user_management_system.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -61,4 +63,12 @@ public class UserController {
         }
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/delete/{username}")
+    public ResponseEntity<ResponseDTO> deleteUser(@PathVariable String username){
+        ResponseDTO responseDTO = userService.deleteUser(username);
+
+        return ResponseEntity.ok(responseDTO);
+    }
+
 }
